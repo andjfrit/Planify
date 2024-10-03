@@ -12,7 +12,7 @@
     <div class="top-section">
         <!-- Left Column: Habits List -->
         <div class="left-column">
-            <h2 class="section-title">Habits</h2>
+            <h2 class="section-title">Your Habits</h2>
             <ul class="habits-list">
                 {% for habit in habits %}
                 <li>
@@ -20,7 +20,9 @@
                         <span class="habit-name">{{ habit['name'] }}</span>
                         <span class="habit-frequency">{{ habit['frequency'] }} per {{ habit['period'] }}</span>
                         <span class="habit-remaining">{{ habit['frequency'] - habit['times_completed'] }} remaining</span>
-                        <button class="btn btn-sm btn-primary add-habit-btn" data-habit-id="{{ habit['id'] }}" data-habit-name="{{ habit['name'] }}">
+                        <button class="btn btn-sm btn-primary add-habit-btn" 
+                                data-habit-id="{{ habit['id'] }}" 
+                                data-habit-name="{{ habit['name'] }}">
                             Add
                         </button>
                     </div>
@@ -32,29 +34,29 @@
         </div>
 
         <!-- Middle Column: Task Form -->
-        <div class="middle-column">
-            <h2 class ="section-title">{{ 'Edit Task' if editing_task else 'Add a New Task' }}</h2>
-            <form method="POST" action="{{ url_for('tasks', view=view_type) }}">
-                {{ task_form.hidden_tag() }}
-                <input type="hidden" name="task_id" id="task_id" value="{{ editing_task['id'] if editing_task else '' }}">
-                {{ task_form.habit_id }}
-                <div class="form-group">
-                    {{ task_form.name.label }}<br>
-                    {{ task_form.name(id="task_form-name", size=50, class_="form-control") }}
-                </div>
-                <div class="form-group">
-                    {{ task_form.description.label }}<br>
-                    {{ task_form.description(rows=4, class_="form-control") }}
-                </div>
-                <div class="form-group">
-                    {{ task_form.date.label }}<br>
-                    {{ task_form.date(class_="form-control") }}
-                </div>
-                <div class="form-group">
-                    <input type="submit" class="btn btn-primary" value="{{ 'Update Task' if editing_task else 'Add Task' }}">
-                </div>
-            </form>
-        </div>
+        <form method="POST" action="{{ url_for('tasks', view=view_type) }}" class="task-form">
+            {{ task_form.hidden_tag() }}
+            {% if editing_task %}
+                <input type="hidden" name="task_id" value="{{ editing_task['id'] }}">
+            {% endif %}
+            <div class="form-group">
+                {{ task_form.name.label }}
+                {{ task_form.name(id="task_form-name", class_="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ task_form.description.label }}
+                {{ task_form.description(class_="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ task_form.date.label }}
+                {{ task_form.date(class_="form-control") }}
+            </div>
+            <!-- Hidden Habit ID Field -->
+            {{ task_form.habit_id(id="habit_id") }}
+            <div class="form-group">
+                {{ task_form.submit(class_="btn btn-primary btn-full") }}
+            </div>
+        </form>
 
         <!-- Right Column: To-Do List -->
         <div class="right-column">
@@ -142,13 +144,18 @@ document.querySelectorAll('.habit-item').forEach(function(element) {
     });
 });
 // JavaScript to handle habit 'Add' button click
-document.querySelectorAll('.add-habit-btn').forEach(function(button) {
-    button.addEventListener('click', function(event) {
-        event.preventDefault();
-        var habitId = this.dataset.habitId;
-        var habitName = this.dataset.habitName;
-        document.getElementById('habit_id').value = habitId;
-        document.getElementById('task_form-name').value = habitName;
+document.addEventListener('DOMContentLoaded', function() {
+    // JavaScript to handle habit 'Add' button click
+    document.querySelectorAll('.add-habit-btn').forEach(function(button) {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            var habitId = this.getAttribute('data-habit-id');
+            var habitName = this.getAttribute('data-habit-name');
+            console.log('Habit ID:', habitId);
+            console.log('Habit Name:', habitName);
+            document.getElementById('habit_id').value = habitId || '';
+            document.getElementById('task_form-name').value = habitName || '';
+        });
     });
 });
 
