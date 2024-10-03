@@ -3,17 +3,18 @@
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-import sqlite3
-from datetime import datetime,timedelta,date
+from datetime import datetime, timedelta, date
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, IntegerField, SelectField, TextAreaField, BooleanField, DateField, HiddenField
+from wtforms import (StringField, PasswordField, SubmitField, IntegerField,
+                     SelectField, TextAreaField, BooleanField, DateField, HiddenField)
 from wtforms.validators import DataRequired, EqualTo, Length, Optional
 import os
 import psycopg2
-from psycopg2.extras import DictCursor
+from psycopg2.extras import RealDictCursor
+from psycopg2 import sql, IntegrityError
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret'  # Replace with a secure key
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'secret')  # Replace with a secure key
 
 # Initialize Flask-Login
 login_manager = LoginManager()
@@ -23,31 +24,32 @@ login_manager.login_view = 'login'
 def get_db_connection():
     conn = psycopg2.connect(
         os.environ['DATABASE_URL'],
-        cursor_factory=DictCursor
+        cursor_factory=RealDictCursor  # Use RealDictCursor for dictionary-like row access
     )
     return conn
+
 def init_db():
     conn = get_db_connection()
     with conn.cursor() as cur:
         cur.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
-                username TEXT NOT NULL UNIQUE,
-                password TEXT NOT NULL
+                username VARCHAR(150) NOT NULL UNIQUE,
+                password VARCHAR(255) NOT NULL
             );
             CREATE TABLE IF NOT EXISTS habits (
                 id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL REFERENCES users (id),
-                name TEXT NOT NULL,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                name VARCHAR(150) NOT NULL,
                 frequency INTEGER NOT NULL,
-                period TEXT NOT NULL,
+                period VARCHAR(20) NOT NULL,
                 times_completed INTEGER DEFAULT 0
             );
             CREATE TABLE IF NOT EXISTS tasks (
                 id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL REFERENCES users (id),
-                habit_id INTEGER REFERENCES habits (id),
-                name TEXT NOT NULL,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                habit_id INTEGER REFERENCES habits(id),
+                name VARCHAR(150) NOT NULL,
                 description TEXT,
                 date DATE,
                 completed BOOLEAN DEFAULT FALSE
@@ -58,7 +60,6 @@ def init_db():
 
 # Call init_db() when the app starts
 init_db()
-
 
 # User model for Flask-Login
 class User(UserMixin):
@@ -71,7 +72,9 @@ class User(UserMixin):
 @login_manager.user_loader
 def load_user(user_id):
     conn = get_db_connection()
-    user_row = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    with conn.cursor() as cursor:
+        cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+        user_row = cursor.fetchone()
     conn.close()
     if user_row:
         return User(user_row)
@@ -121,13 +124,18 @@ def register():
         conn = get_db_connection()
         hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
         try:
-            conn.execute('INSERT INTO users (username, password) VALUES (?, ?)',
-                         (form.username.data, hashed_password))
+            with conn.cursor() as cursor:
+                cursor.execute('INSERT INTO users (username, password) VALUES (%s, %s)',
+                               (form.username.data, hashed_password))
             conn.commit()
             flash('Registration successful. Please log in.', 'success')
             return redirect(url_for('login'))
-        except sqlite3.IntegrityError:
-            flash('Username already exists. Please choose a different one.', 'danger')
+        except IntegrityError as e:
+            conn.rollback()
+            if 'unique constraint' in str(e).lower():
+                flash('Username already exists. Please choose a different one.', 'danger')
+            else:
+                flash('An error occurred during registration.', 'danger')
         finally:
             conn.close()
     return render_template('register.html', form=form)
@@ -138,7 +146,9 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         conn = get_db_connection()
-        user_row = conn.execute('SELECT * FROM users WHERE username = ?', (form.username.data,)).fetchone()
+        with conn.cursor() as cursor:
+            cursor.execute('SELECT * FROM users WHERE username = %s', (form.username.data,))
+            user_row = cursor.fetchone()
         conn.close()
         if user_row and check_password_hash(user_row['password'], form.password.data):
             user = User(user_row)
@@ -176,20 +186,22 @@ def habits():
         habit_id = request.form.get('habit_id')
         if habit_id:  # Update existing habit
             if form.validate_on_submit():
-                conn.execute('''
-                    UPDATE habits
-                    SET name = ?, frequency = ?, period = ?
-                    WHERE id = ? AND user_id = ?
-                ''', (form.name.data, form.frequency.data, form.period.data, habit_id, current_user.id))
+                with conn.cursor() as cursor:
+                    cursor.execute('''
+                        UPDATE habits
+                        SET name = %s, frequency = %s, period = %s
+                        WHERE id = %s AND user_id = %s
+                    ''', (form.name.data, form.frequency.data, form.period.data, habit_id, current_user.id))
                 conn.commit()
                 flash('Habit updated successfully.', 'success')
                 return redirect(url_for('habits'))
         else:  # Add new habit
             if form.validate_on_submit():
-                conn.execute('''
-                    INSERT INTO habits (user_id, name, frequency, period, times_completed)
-                    VALUES (?, ?, ?, ?, 0)
-                ''', (current_user.id, form.name.data, form.frequency.data, form.period.data))
+                with conn.cursor() as cursor:
+                    cursor.execute('''
+                        INSERT INTO habits (user_id, name, frequency, period, times_completed)
+                        VALUES (%s, %s, %s, %s, 0)
+                    ''', (current_user.id, form.name.data, form.frequency.data, form.period.data))
                 conn.commit()
                 flash('Habit added successfully.', 'success')
                 return redirect(url_for('habits'))
@@ -197,7 +209,9 @@ def habits():
     # Handle editing habit
     edit_habit_id = request.args.get('edit')
     if edit_habit_id:
-        editing_habit = conn.execute('SELECT * FROM habits WHERE id = ? AND user_id = ?', (edit_habit_id, current_user.id)).fetchone()
+        with conn.cursor() as cursor:
+            cursor.execute('SELECT * FROM habits WHERE id = %s AND user_id = %s', (edit_habit_id, current_user.id))
+            editing_habit = cursor.fetchone()
         if editing_habit:
             form.name.data = editing_habit['name']
             form.frequency.data = editing_habit['frequency']
@@ -205,7 +219,9 @@ def habits():
         else:
             flash('Habit not found.', 'danger')
 
-    habits = conn.execute('SELECT * FROM habits WHERE user_id = ?', (current_user.id,)).fetchall()
+    with conn.cursor() as cursor:
+        cursor.execute('SELECT * FROM habits WHERE user_id = %s', (current_user.id,))
+        habits = cursor.fetchall()
     conn.close()
     return render_template('habits.html', form=form, habits=habits, editing_habit=editing_habit)
 
@@ -214,13 +230,12 @@ def habits():
 @login_required
 def delete_habit(habit_id):
     conn = get_db_connection()
-    conn.execute('DELETE FROM habits WHERE id = ? AND user_id = ?', (habit_id, current_user.id))
+    with conn.cursor() as cursor:
+        cursor.execute('DELETE FROM habits WHERE id = %s AND user_id = %s', (habit_id, current_user.id))
     conn.commit()
     conn.close()
     flash('Habit deleted successfully.', 'success')
     return redirect(url_for('habits'))
-
-
 
 @app.route('/tasks', methods=['GET', 'POST'])
 @login_required
@@ -253,33 +268,35 @@ def tasks():
 
         if task_id:  # Update existing task
             if task_form.validate_on_submit():
-                conn.execute('''
-                    UPDATE tasks
-                    SET habit_id = ?, name = ?, description = ?, date = ?
-                    WHERE id = ? AND user_id = ?
-                ''', (
-                    habit_id,
-                    task_form.name.data,
-                    task_form.description.data,
-                    task_form.date.data.isoformat() if task_form.date.data else None,
-                    task_id,
-                    current_user.id
-                ))
+                with conn.cursor() as cursor:
+                    cursor.execute('''
+                        UPDATE tasks
+                        SET habit_id = %s, name = %s, description = %s, date = %s
+                        WHERE id = %s AND user_id = %s
+                    ''', (
+                        habit_id,
+                        task_form.name.data,
+                        task_form.description.data,
+                        task_form.date.data.isoformat() if task_form.date.data else None,
+                        task_id,
+                        current_user.id
+                    ))
                 conn.commit()
                 flash('Task updated successfully.', 'success')
                 return redirect(url_for('tasks', view=view_type))
         else:  # Add new task
             if task_form.validate_on_submit():
-                conn.execute('''
-                    INSERT INTO tasks (user_id, habit_id, name, description, date, completed)
-                    VALUES (?, ?, ?, ?, ?, 0)
-                ''', (
-                    current_user.id,
-                    habit_id,
-                    task_form.name.data,
-                    task_form.description.data,
-                    task_form.date.data.isoformat() if task_form.date.data else None
-                ))
+                with conn.cursor() as cursor:
+                    cursor.execute('''
+                        INSERT INTO tasks (user_id, habit_id, name, description, date, completed)
+                        VALUES (%s, %s, %s, %s, %s, FALSE)
+                    ''', (
+                        current_user.id,
+                        habit_id,
+                        task_form.name.data,
+                        task_form.description.data,
+                        task_form.date.data.isoformat() if task_form.date.data else None
+                    ))
                 conn.commit()
                 flash('Task added successfully.', 'success')
                 return redirect(url_for('tasks', view=view_type))
@@ -287,33 +304,39 @@ def tasks():
     # Handle editing task
     edit_task_id = request.args.get('edit')
     if edit_task_id:
-        editing_task = conn.execute('SELECT * FROM tasks WHERE id = ? AND user_id = ?', (edit_task_id, current_user.id)).fetchone()
+        with conn.cursor() as cursor:
+            cursor.execute('SELECT * FROM tasks WHERE id = %s AND user_id = %s', (edit_task_id, current_user.id))
+            editing_task = cursor.fetchone()
         if editing_task:
             task_form.name.data = editing_task['name']
             task_form.description.data = editing_task['description']
-            task_form.date.data = datetime.strptime(editing_task['date'], '%Y-%m-%d').date() if editing_task['date'] else None
+            task_form.date.data = editing_task['date']
             task_form.habit_id.data = str(editing_task['habit_id']) if editing_task['habit_id'] else ''
         else:
             flash('Task not found.', 'danger')
 
     # Retrieve habits and tasks
-    habits = conn.execute('SELECT * FROM habits WHERE user_id = ?', (current_user.id,)).fetchall()
+    with conn.cursor() as cursor:
+        cursor.execute('SELECT * FROM habits WHERE user_id = %s', (current_user.id,))
+        habits = cursor.fetchall()
 
-    undated_tasks = conn.execute('''
-        SELECT * FROM tasks
-        WHERE user_id = ? AND date IS NULL
-    ''', (current_user.id,)).fetchall()
+        cursor.execute('''
+            SELECT * FROM tasks
+            WHERE user_id = %s AND date IS NULL
+        ''', (current_user.id,))
+        undated_tasks = cursor.fetchall()
 
-    dated_tasks = conn.execute('''
-        SELECT * FROM tasks
-        WHERE user_id = ? AND date IS NOT NULL
-    ''', (current_user.id,)).fetchall()
+        cursor.execute('''
+            SELECT * FROM tasks
+            WHERE user_id = %s AND date IS NOT NULL
+        ''', (current_user.id,))
+        dated_tasks = cursor.fetchall()
 
     # Prepare tasks by date
     tasks_by_date = {d.strftime('%Y-%m-%d'): [] for d in dates}
 
     for task in dated_tasks:
-        task_date_str = task['date']
+        task_date_str = task['date'].strftime('%Y-%m-%d')
         if task_date_str in tasks_by_date:
             tasks_by_date[task_date_str].append(task)
 
@@ -322,12 +345,14 @@ def tasks():
     return render_template('tasks.html', task_form=task_form, habits=habits,
                            undated_tasks=undated_tasks, tasks_by_date=tasks_by_date,
                            dates=dates, view_type=view_type, editing_task=editing_task, today=today)
+
 # Route: Delete Task
 @app.route('/delete_task/<int:task_id>', methods=['POST'])
 @login_required
 def delete_task(task_id):
     conn = get_db_connection()
-    conn.execute('DELETE FROM tasks WHERE id = ? AND user_id = ?', (task_id, current_user.id))
+    with conn.cursor() as cursor:
+        cursor.execute('DELETE FROM tasks WHERE id = %s AND user_id = %s', (task_id, current_user.id))
     conn.commit()
     conn.close()
     flash('Task deleted successfully.', 'success')
@@ -338,29 +363,31 @@ def delete_task(task_id):
 def toggle_task(task_id):
     view_type = request.args.get('view', 'day')
     conn = get_db_connection()
-    task = conn.execute('SELECT * FROM tasks WHERE id = ? AND user_id = ?', (task_id, current_user.id)).fetchone()
-    if task:
-        new_status = 0 if task['completed'] else 1
-        conn.execute('UPDATE tasks SET completed = ? WHERE id = ? AND user_id = ?', (new_status, task_id, current_user.id))
-        conn.commit()
-        # Adjust habit completion if necessary
-        if task['habit_id']:
-            if new_status == 1:
-                conn.execute('''
-                    UPDATE habits
-                    SET times_completed = times_completed + 1
-                    WHERE id = ? AND user_id = ?
-                ''', (task['habit_id'], current_user.id))
-            else:
-                conn.execute('''
-                    UPDATE habits
-                    SET times_completed = times_completed - 1
-                    WHERE id = ? AND user_id = ? AND times_completed > 0
-                ''', (task['habit_id'], current_user.id))
+    with conn.cursor() as cursor:
+        cursor.execute('SELECT * FROM tasks WHERE id = %s AND user_id = %s', (task_id, current_user.id))
+        task = cursor.fetchone()
+        if task:
+            new_status = not task['completed']
+            cursor.execute('UPDATE tasks SET completed = %s WHERE id = %s AND user_id = %s',
+                           (new_status, task_id, current_user.id))
+            # Adjust habit completion if necessary
+            if task['habit_id']:
+                if new_status:
+                    cursor.execute('''
+                        UPDATE habits
+                        SET times_completed = times_completed + 1
+                        WHERE id = %s AND user_id = %s
+                    ''', (task['habit_id'], current_user.id))
+                else:
+                    cursor.execute('''
+                        UPDATE habits
+                        SET times_completed = times_completed - 1
+                        WHERE id = %s AND user_id = %s AND times_completed > 0
+                    ''', (task['habit_id'], current_user.id))
             conn.commit()
-        flash('Task status updated.', 'success')
-    else:
-        flash('Task not found.', 'danger')
+            flash('Task status updated.', 'success')
+        else:
+            flash('Task not found.', 'danger')
     conn.close()
     return redirect(url_for('tasks', view=view_type))
 
