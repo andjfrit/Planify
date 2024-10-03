@@ -1,0 +1,26 @@
+<!-- templates/edit_task.html -->
+{% extends 'base.html' %}
+
+{% block title %}Edit Task - Planify{% endblock %}
+
+{% block content %}
+<h1>Edit Task</h1>
+<form method="POST" action="{{ url_for('edit_task', task_id=task['id']) }}">
+    {{ task_form.hidden_tag() }}
+    <div class="form-group">
+        {{ task_form.name.label }}<br>
+        {{ task_form.name(value=task['name'], size=50, class_="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ task_form.description.label }}<br>
+        {{ task_form.description(value=task['description'], rows=4, class_="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ task_form.date.label }}<br>
+        {{ task_form.date(value=task['date'], class_="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ task_form.submit(class_="btn btn-primary") }}
+    </div>
+</form>
+{% endblock %}

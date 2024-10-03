@@ -1,0 +1,447 @@
+/* static/css/styles.css */
+
+/* Global Styles */
+body {
+    font-family: 'Helvetica Neue', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #F5F5F7;
+    color: #1C1C1E;
+}
+
+a {
+    color: #007AFF;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+h1, h2, h3 {
+    font-weight: 700;
+}
+
+p {
+    line-height: 1.6;
+}
+
+/* Navbar Styles */
+.navbar {
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #D1D1D6;
+    padding: 10px 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.navbar-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    height: 40px;
+    margin-right: 10px;
+}
+
+.app-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1C1C1E;
+}
+
+.navbar-links {
+    list-style-type: none;
+    display: flex;
+    margin: 0;
+    padding: 0;
+}
+
+.navbar-links li {
+    margin-left: 20px;
+}
+
+.navbar-links a {
+    font-size: 16px;
+    color: #1C1C1E;
+}
+
+.navbar-links a:hover {
+    color: #007AFF;
+}
+
+/* Main Content */
+.main-content {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 0 20px;
+}
+
+/* Authentication Pages */
+.auth-container {
+    text-align: center;
+    padding: 40px 20px;
+    background-color: #FFFFFF;
+    border-radius: 8px;
+    margin: 0 auto;
+    max-width: 400px;
+}
+
+.auth-form {
+    margin-top: 30px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #C7C7CC;
+    border-radius: 6px;
+    font-size: 16px;
+    background-color: #F2F2F7;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background-color: #007AFF;
+    color: #FFFFFF;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    background-color: #005BBB;
+}
+
+.btn-full {
+    width: 100%;
+}
+
+.auth-switch {
+    margin-top: 20px;
+}
+
+.auth-switch a {
+    color: #007AFF;
+}
+
+.flash-message {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+}
+
+.flash-message.success {
+    background-color: #E7F9ED;
+    color: #28A745;
+}
+
+.flash-message.danger {
+    background-color: #FDECEA;
+    color: #DC3545;
+}
+
+.flash-message.info {
+    background-color: #E8F4FD;
+    color: #17A2B8;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .navbar-container {
+        flex-direction: column;
+    }
+
+    .navbar-links {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .navbar-links li {
+        margin-left: 0;
+        margin-top: 10px;
+    }
+
+    .auth-container {
+        padding: 20px 10px;
+    }
+
+    .main-content {
+        padding: 0 10px;
+    }
+}
+/* Dashboard Styles */
+.dashboard-container {
+    text-align: center;
+    padding: 20px 20px;
+}
+
+.dashboard-container h1 {
+    font-size: 32px;
+    margin-bottom: 20px;
+}
+
+.dashboard-container p {
+    font-size: 18px;
+    margin: 10px 0;
+}
+
+#current-time {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.dashboard-image {
+    margin: 20px 0;
+}
+
+.dashboard-image img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.motivation-text {
+    font-size: 20px;
+    font-style: italic;
+    margin: 20px 0;
+}
+
+.dashboard-buttons {
+    margin-top: 30px;
+}
+
+.dashboard-buttons .btn {
+    margin: 10px 5px;
+    padding: 12px 24px;
+    font-size: 18px;
+}
+
+/* tasks.css */
+
+/* Layout Styles */
+.tasks-page {
+    display: flex;
+    flex-direction: column;
+}
+
+.top-section {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.left-column, .middle-column, .right-column {
+    flex: 1;
+    min-width: 250px;
+    margin: 10px;
+}
+
+.left-column {
+    /* Additional styles for the habits list */
+}
+
+.middle-column {
+    /* Additional styles for the task form */
+}
+
+.right-column {
+    /* Additional styles for the to-do list */
+}
+
+/* Bottom Section Styles */
+.bottom-section {
+    margin-top: 20px;
+}
+
+.date-range-buttons {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.tasks-by-date-section {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.date-card {
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin: 5px;
+    flex: 1;
+    min-width: 200px;
+}
+
+.today-card {
+    background-color: #f9f9f9;
+    border-color: #007bff;
+}
+
+/* View-specific Styles */
+{% if view_type == 'day' %}
+.date-card {
+    flex-basis: 100%;
+}
+{% elif view_type == '3day' %}
+.date-card {
+    flex-basis: calc(33.33% - 10px);
+}
+{% if view_type == 'week' %}
+.tasks-by-date-section {
+    display: flex;
+    flex-wrap: nowrap; /* Prevent wrapping */
+    justify-content: space-between;
+}
+.tasks-by-date-section .date-card {
+    flex: 1 1 calc(14.2857% - 10px); /* Exact 1/7th minus margin */
+    margin: 5px;
+}
+{% endif %}
+
+/* Task Item Styles */
+.task-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #fff;
+}
+.task-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.task-actions .btn {
+    margin-left: 5px;
+}
+
+/* Styles for the habits list */
+.habits-list {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.habits-list li {
+    margin-bottom: 10px;
+}
+
+.habit-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #fff;
+}
+
+.habit-item span {
+    margin-right: 10px;
+    font-size: 14px;
+}
+
+.habit-name {
+    font-weight: bold;
+    flex: 1;
+}
+
+.habit-frequency,
+.habit-remaining {
+    flex: 1;
+    text-align: center;
+}
+
+.add-habit-btn {
+    padding: 6px 12px;
+    font-size: 14px;
+}
+/* Additional Styles */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.btn {
+    padding: 8px 12px;
+}
+/* Override for the tasks page */
+.tasks-page-content {
+    max-width: none;
+    margin: 20px;
+    padding: 0 20px;
+}
+
+/* Base Style for Status Buttons */
+.status-btn {
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+/* Style for Incomplete Tasks */
+.status-btn.incomplete {
+    background-color: #DC3545; /* Red */
+}
+
+.status-btn.incomplete:hover {
+    background-color: #c82333;
+}
+
+/* Style for Completed Tasks */
+.status-btn.completed {
+    background-color: #28A745; /* Green */
+}
+
+.status-btn.completed:hover {
+    background-color: #218838;
+}
+/* Center the page title */
+.page-title {
+    text-align: center;
+    font-size: 32px;
+    margin-bottom: 20px;
+}
+
+/* Center the section titles */
+.section-title {
+    text-align: center;
+    font-size: 24px;
+    margin-bottom: 15px;
+}
+/* Remove bullet points from task lists */
+.todo-list,
+.task-list {
+    list-style-type: none;
+    padding-left: 0;
+}

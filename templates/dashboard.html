@@ -1,0 +1,36 @@
+<!-- templates/dashboard.html -->
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Planify{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h1>Welcome, {{ current_user.username }}!</h1>
+    <p>{{ date }}</p>
+    <p id="current-time"></p>
+    <div class="dashboard-image">
+        <!-- Placeholder for the image -->
+        <img src="{{ url_for('static', filename='images/strongman.webp') }}" alt="Motivational Image">
+    </div>
+    <p class="motivation-text">C'mon you got it</p>
+    <div class="dashboard-buttons">
+        <a href="{{ url_for('habits') }}" class="btn btn-secondary">Habits</a>
+        <a href="{{ url_for('tasks') }}" class="btn btn-secondary">Tasks</a>
+    </div>
+</div>
+
+<!-- Include a script to update the time -->
+<script>
+    function updateTime() {
+        const currentTimeElement = document.getElementById('current-time');
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        currentTimeElement.textContent = timeString;
+    }
+
+    // Update time every second
+    setInterval(updateTime, 1000);
+    // Initialize time on page load
+    updateTime();
+</script>
+{% endblock %}

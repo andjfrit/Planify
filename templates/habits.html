@@ -1,0 +1,75 @@
+<!-- templates/habits.html -->
+{% extends 'base.html' %}
+
+{% block title %}Habits - Planify{% endblock %}
+
+{% block content %}
+<h1>Your Habits</h1>
+
+<!-- Form to add or edit a habit -->
+<h2>{{ 'Edit Habit' if editing_habit else 'Add a New Habit' }}</h2>
+<form method="POST" action="{{ url_for('habits') }}">
+    {{ form.hidden_tag() }}
+    <input type="hidden" name="habit_id" id="habit_id" value="{{ editing_habit['id'] if editing_habit else '' }}">
+    <div class="form-group">
+        {{ form.name.label }}<br>
+        {{ form.name(size=50, class_="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.frequency.label }}<br>
+        {{ form.frequency(class_="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.period.label }}<br>
+        {{ form.period(class_="form-control") }}
+    </div>
+    <div class="form-group">
+        <input type="submit" class="btn btn-primary" value="{{ 'Update Habit' if editing_habit else 'Add Habit' }}">
+    </div>
+</form>
+
+<!-- List of existing habits -->
+<h2>Your Habit List</h2>
+<table class="habit-table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Frequency</th>
+            <th>Period</th>
+            <th>Times Completed</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for habit in habits %}
+        <tr>
+            <td>{{ habit['name'] }}</td>
+            <td>{{ habit['frequency'] }}</td>
+            <td>{{ habit['period'].capitalize() }}</td>
+            <td>{{ habit['times_completed'] }}</td>
+            <td>
+                <a href="#" class="btn btn-sm btn-warning edit-habit-btn" data-habit-id="{{ habit['id'] }}">Edit</a>
+                <form action="{{ url_for('delete_habit', habit_id=habit['id']) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this habit?');">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5">You have no habits yet.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+// JavaScript to handle editing habits
+document.querySelectorAll('.edit-habit-btn').forEach(function(button) {
+    button.addEventListener('click', function(event) {
+        event.preventDefault();
+        var habitId = this.dataset.habitId;
+        window.location.href = '{{ url_for("habits") }}?edit=' + habitId;
+    });
+});
+</script>
+{% endblock %}
