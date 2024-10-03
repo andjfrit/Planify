@@ -8,6 +8,9 @@ from datetime import datetime,timedelta,date
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, IntegerField, SelectField, TextAreaField, BooleanField, DateField, HiddenField
 from wtforms.validators import DataRequired, EqualTo, Length, Optional
+import os
+import psycopg2
+from psycopg2.extras import DictCursor
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'  # Replace with a secure key
@@ -17,11 +20,45 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# Database connection function
 def get_db_connection():
-    conn = sqlite3.connect('database.db')
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(
+        os.environ['DATABASE_URL'],
+        cursor_factory=DictCursor
+    )
     return conn
+def init_db():
+    conn = get_db_connection()
+    with conn.cursor() as cur:
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username TEXT NOT NULL UNIQUE,
+                password TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS habits (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users (id),
+                name TEXT NOT NULL,
+                frequency INTEGER NOT NULL,
+                period TEXT NOT NULL,
+                times_completed INTEGER DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS tasks (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users (id),
+                habit_id INTEGER REFERENCES habits (id),
+                name TEXT NOT NULL,
+                description TEXT,
+                date DATE,
+                completed BOOLEAN DEFAULT FALSE
+            );
+        ''')
+        conn.commit()
+    conn.close()
+
+# Call init_db() when the app starts
+init_db()
+
 
 # User model for Flask-Login
 class User(UserMixin):

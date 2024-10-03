@@ -1,0 +1,23 @@
+# .gitignore
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+
+# SQLite database
+*.db
+database.db
+
+# Secrets
+*.env
+
+# VSCode settings
+.vscode/
+
+# PyCharm settings
+.idea/
