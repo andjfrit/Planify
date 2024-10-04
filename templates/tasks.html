@@ -17,12 +17,12 @@
                 {% for habit in habits %}
                 <li>
                     <div class="habit-item">
-                        <span class="habit-name">{{ habit['name'] }}</span>
-                        <span class="habit-frequency">{{ habit['frequency'] }} per {{ habit['period'] }}</span>
-                        <span class="habit-remaining">{{ habit['frequency'] - habit['times_completed'] }} remaining</span>
+                        <span class="habit-name">{{ habit.name }}</span>
+                        <span class="habit-frequency">{{ habit.frequency }} per {{ habit.period }}</span>
+                        <span class="habit-remaining">{{ habit.frequency - habit.times_completed }} remaining</span>
                         <button class="btn btn-sm btn-primary add-habit-btn" 
-                                data-habit-id="{{ habit['id'] }}" 
-                                data-habit-name="{{ habit['name'] }}">
+                                data-habit-id="{{ habit.id }}" 
+                                data-habit-name="{{ habit.name }}">
                             Add
                         </button>
                     </div>
